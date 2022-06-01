@@ -29,12 +29,13 @@ namespace FlightTracker.Services
             }
             
             var contentStream = await response.Content.ReadAsStreamAsync();
-            Console.WriteLine(await response.Content.ReadAsStringAsync());
             var doc = await JsonDocument.ParseAsync(contentStream);
 
-            StateVectorsDto data = new();
-            data.Time = doc.RootElement.GetProperty("time").GetInt32();
-            data.States = new List<StateVector>();
+            StateVectorsDto data = new()
+            {
+                Time = doc.RootElement.GetProperty("time").GetInt32(),
+                States = new List<StateVector>()
+            };
 
             var states = doc.RootElement.GetProperty("states");
             if (states.ValueKind == JsonValueKind.Null)
@@ -45,23 +46,22 @@ namespace FlightTracker.Services
             foreach (var arr in states.EnumerateArray())
             {
                 var vector = new StateVector();
-                var list = new List<string>();
-                foreach (var st in arr.EnumerateArray())
-                {
-                    var unix = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+                var list = arr.EnumerateArray().ToList();
 
-                    vector.Icao24 = st.GetString();
-                    vector.Callsign = st.GetString();
-                    vector.OriginCountry = st.GetProperty("origin_country").GetString();
-                    vector.LastContact = unix.AddSeconds(st.GetProperty("last_contact").GetInt64());
+                var unix = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+                    
+                vector.Icao24 = list[0].GetString();
+                vector.Callsign = list[1].GetString();
+                vector.OriginCountry = list[2].GetString();
+                vector.LastContact = unix.AddSeconds(list[4].GetInt64());
 
-                    vector.Longitude = (float) st.GetProperty("longitude").GetDouble();
-                    vector.Latitude = (float) st.GetProperty("latitude").GetDouble();
-                    vector.BaroAltitude = (float) st.GetProperty("baro_altitude").GetDouble();
-
-                    vector.OnGround = st.GetProperty("on_ground").GetBoolean();
-                    vector.Velocity = (float) st.GetProperty("velocity").GetDouble();
-                }
+                vector.Longitude = (float) list[5].GetDouble();
+                vector.Latitude = (float) list[6].GetDouble();
+                vector.BaroAltitude = (float) list[7].GetDouble();
+                
+                vector.OnGround = list[8].GetBoolean();
+                vector.Velocity = (float) list[9].GetDouble();
+                
                 data.States.Add(vector);
             }
 
