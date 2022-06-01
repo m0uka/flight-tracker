@@ -35,8 +35,14 @@ namespace FlightTracker.Services
             StateVectorsDto data = new();
             data.Time = doc.RootElement.GetProperty("time").GetInt32();
             data.States = new List<StateVector>();
+
+            var states = doc.RootElement.GetProperty("states");
+            if (states.ValueKind == JsonValueKind.Null)
+            {
+                return null;
+            }
             
-            foreach (var arr in doc.RootElement.GetProperty("states").EnumerateArray())
+            foreach (var arr in states.EnumerateArray())
             {
                 var vector = new StateVector();
                 var list = new List<string>();
