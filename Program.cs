@@ -1,4 +1,5 @@
 using System;
+using FlightTracker.HostedServices;
 using FlightTracker.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,7 @@ builder.Services.AddHttpClient("OpenSky", client =>
 });
 
 builder.Services.AddTransient<IAircraftService, AircraftService>();
+builder.Services.AddHostedService<AircraftMonitorHostedService>();
 
 var app = builder.Build();
 

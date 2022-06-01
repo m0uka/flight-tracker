@@ -12,10 +12,12 @@ namespace FlightTracker.Services
     public class AircraftService : IAircraftService
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
-        public AircraftService(IHttpClientFactory httpClientFactory)
+        public AircraftService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
         public async Task<StateVector?> GetStateVectors(string icao)
@@ -52,13 +54,17 @@ namespace FlightTracker.Services
                     
                 vector.Icao24 = list[0].GetString();
                 vector.Callsign = list[1].GetString();
-                vector.OriginCountry = list[2].GetString();
+                vector.OriginCountry = list[2].GetString().Trim();
                 vector.LastContact = unix.AddSeconds(list[4].GetInt64());
 
                 vector.Longitude = (float) list[5].GetDouble();
                 vector.Latitude = (float) list[6].GetDouble();
-                vector.BaroAltitude = (float) list[7].GetDouble();
-                
+
+                if (list[7].ValueKind != JsonValueKind.Null)
+                {
+                    vector.BaroAltitude = (float)list[7].GetDouble();
+                }
+
                 vector.OnGround = list[8].GetBoolean();
                 vector.Velocity = (float) list[9].GetDouble();
                 
@@ -66,6 +72,46 @@ namespace FlightTracker.Services
             }
 
             return data.States[0];
+        }
+
+        public async Task HandleStateChange(Flight flight, FlightStateChange change)
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            var webhookDto = new WebhookDto
+            {
+                Content = null,
+                Username = "Flight Tracker",
+            };
+
+            switch (change)
+            {
+                case FlightStateChange.None:
+                    break;
+                
+                case FlightStateChange.TakeOff:
+                    webhookDto.Content =
+                        $"Letadlo {flight.StateVectors?.Callsign} ze země {flight.StateVectors?.OriginCountry} právě vzlétlo! Souřadnice: {flight.StateVectors.Latitude}°N, {flight.StateVectors.Longitude}°E";
+                    break;
+                
+                case FlightStateChange.Landing:
+                    webhookDto.Content =
+                        $"Letadlo {flight.StateVectors?.Callsign} ze země {flight.StateVectors?.OriginCountry} právě přistálo! Souřadnice: {flight.StateVectors.Latitude}°N, {flight.StateVectors.Longitude}°E";
+                    break;
+                
+                case FlightStateChange.GotContact:
+                    webhookDto.Content =
+                        $"Spojení s letadlem {flight.StateVectors?.Callsign} ze země {flight.StateVectors?.OriginCountry} navázáno! Souřadnice: {flight.StateVectors.Latitude}°N, {flight.StateVectors.Longitude}°E";
+                    break;
+                
+                case FlightStateChange.LostContact:
+                    webhookDto.Content = $"Ztratili jsme spojení s letadlem {flight.Icao24}!";
+                    break;
+            }
+
+            if (webhookDto.Content != null)
+            {
+                await httpClient.PostAsJsonAsync(_configuration["WebhookUrl"], webhookDto);
+            }
         }
     }
 }

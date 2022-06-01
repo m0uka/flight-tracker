@@ -24,7 +24,7 @@ namespace FlightTracker.Objects
         public float Latitude { get; set; }
         
         [JsonPropertyName("baro_altitude")]
-        public float BaroAltitude { get; set; }
+        public float? BaroAltitude { get; set; }
         
         [JsonPropertyName("on_ground")]
         public bool OnGround { get; set; }

@@ -1,9 +1,6 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using FlightTracker.Objects;
 using FlightTracker.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace FlightTracker.Controllers
 {
@@ -20,6 +17,7 @@ namespace FlightTracker.Controllers
             _configuration = configuration;
         }
 
+        [HttpGet]
         public async Task<List<StateVector>> Get()
         {
             var trackedPlanes = _configuration.GetSection("TrackedPlanes").Get<List<string>>();
