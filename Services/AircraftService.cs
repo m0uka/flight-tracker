@@ -13,11 +13,13 @@ namespace FlightTracker.Services
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AircraftService> _logger;
 
-        public AircraftService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public AircraftService(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<AircraftService> logger)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<StateVector?> GetStateVectors(string icao)
@@ -53,7 +55,7 @@ namespace FlightTracker.Services
                 var unix = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
                     
                 vector.Icao24 = list[0].GetString();
-                vector.Callsign = list[1].GetString();
+                vector.Callsign = list[1].GetString().Trim();
                 vector.OriginCountry = list[2].GetString().Trim();
                 vector.LastContact = unix.AddSeconds(list[4].GetInt64());
 
@@ -111,6 +113,7 @@ namespace FlightTracker.Services
             if (webhookDto.Content != null)
             {
                 await httpClient.PostAsJsonAsync(_configuration["WebhookUrl"], webhookDto);
+                _logger.LogInformation(webhookDto.Content);
             }
         }
     }

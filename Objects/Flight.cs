@@ -8,15 +8,17 @@ public class Flight
 
     public FlightStateChange CompareVectors(StateVector? newVectors)
     {
-        if (newVectors == null)
+        if (StateVectors != null && newVectors == null)
         {
             return FlightStateChange.LostContact;
         }
 
-        if (StateVectors == null)
+        if (StateVectors == null && newVectors != null)
         {
             return FlightStateChange.GotContact;
         }
+
+        if (StateVectors == null || newVectors == null) return FlightStateChange.None;
         
         if (StateVectors.OnGround && !newVectors.OnGround)
         {

@@ -36,19 +36,21 @@ public class AircraftMonitorHostedService : IHostedService, IDisposable
         foreach (var icao in trackedPlanes)
         {
             var stateVector = await _aircraftService.GetStateVectors(icao);
-            if (!Flights.TryGetValue(icao, out var plane))
+            if (!Flights.TryGetValue(icao, out var flight))
             {
                 Flights[icao] = new Flight
                 {
                     Icao24 = icao,
                     StateVectors = stateVector
                 };
+
+                flight = Flights[icao];
             }
 
-            var stateChange = Flights[icao].CompareVectors(stateVector);
-            Flights[icao].StateVectors = stateVector;
+            var stateChange = flight.CompareVectors(stateVector);
+            flight.StateVectors = stateVector;
 
-            await _aircraftService.HandleStateChange(Flights[icao], stateChange);
+            await _aircraftService.HandleStateChange(flight, stateChange);
         }
     }
 
